@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการเครื่องมือช่าง</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> .modal { display: none; } .modal.active { display: flex; } </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-7xl mx-auto mb-4"><img src="data:image/png;base64,PASTE_YOUR_BASE64_CODE_HERE" alt="Company Logo" class="h-16 w-auto"></div>
+    
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex flex-wrap gap-4">
+            <button id="add-tool-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">➕ เพิ่มเครื่องมือ (Admin)</button>
+            <button id="checkout-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg">📋 เบิกอุปกรณ์</button>
+            <button id="repair-btn" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg">🔧 แจ้งซ่อม</button>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+             <h2 class="text-2xl font-semibold text-gray-700 mb-4">รายการเครื่องมือทั้งหมด</h2>
+             <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="p-3 text-left">รูปภาพ</th><th class="p-3 text-left">รายการ</th><th class="p-3 text-left">สถานะ</th><th class="p-3 text-left">ประจำไซด์งาน</th></tr></thead><tbody id="main-tool-table" class="divide-y divide-gray-200"></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="add-tool-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full items-center justify-center p-4"><div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl max-h-full overflow-y-auto"><form id="add-tool-form" class="grid grid-cols-1 md:grid-cols-2 gap-4"><h2 class="text-2xl font-semibold col-span-full mb-2">เพิ่มเครื่องมือใหม่</h2><div><label>รายการ</label><input id="item_name" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>รหัส</label><input id="item_code" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>ยี่ห้อ</label><input id="brand" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>รุ่น</label><input id="model" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>S/N</label><input id="serial_number" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>หน้างาน</label><select id="site_id" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></select></div><div class="col-span-full"><label>หมายเหตุ</label><textarea id="notes" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md p-2"></textarea></div><div class="col-span-full"><label>แนบรูปภาพ</label><input type="file" id="tool_image" accept="image/*" class="mt-1 block w-full text-sm"></div><div class="col-span-full flex gap-4 mt-4"><button type="submit" id="submit-button" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">บันทึก</button><button type="button" class="close-modal-btn w-full bg-gray-300 font-bold py-2 px-4 rounded-lg">ยกเลิก</button></div></form></div></div>
+    <div id="checkout-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full items-center justify-center p-4"><div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md"><h2 class="text-2xl font-semibold mb-4">เบิกอุปกรณ์</h2><form id="checkout-form" class="space-y-4"><div><label>เลือกเครื่องมือ (เฉพาะที่พร้อมใช้งาน):</label><select id="checkout-tool-select" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></select></div><div><label>ชื่อผู้เบิก:</label><input type="text" id="borrower-name" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>ชื่อผู้จ่าย:</label><input type="text" id="lender-name" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div class="flex gap-4 mt-4"><button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg">ยืนยันการเบิก</button><button type="button" class="close-modal-btn w-full bg-gray-300 font-bold py-2 px-4 rounded-lg">ยกเลิก</button></div></form></div></div>
+    <div id="repair-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full items-center justify-center p-4"><div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md"><h2 class="text-2xl font-semibold mb-4">แจ้งซ่อม</h2><form id="repair-form" class="space-y-4"><div><label>เลือกเครื่องมือที่ต้องการแจ้งซ่อม:</label><select id="repair-tool-select" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></select></div><div><label>ชื่อผู้แจ้ง:</label><input type="text" id="reporter-name" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div><div><label>อาการที่ชำรุด:</label><textarea id="problem-description" rows="3" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></textarea></div><div class="flex gap-4 mt-4"><button type="submit" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-lg">ยืนยัน</button><button type="button" class="close-modal-btn w-full bg-gray-300 font-bold py-2 px-4 rounded-lg">ยกเลิก</button></div></form></div></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+        
+        // ✨ URL และ Key ใหม่ของคุณถูกใส่ไว้เรียบร้อยแล้ว ✨
+        const SUPABASE_URL = 'https://wkpgurzecttntvaezrga.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrcGd1cnplY3R0bnR2YWV6cmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzYzMTYsImV4cCI6MjA3NDQ1MjMxNn0.Ri7EVc5g_g2HJUYtjJEVHyBb7JYg6W1fT-XlCzmWuLI';
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const ADMIN_PASSWORD = "admin";
+
+        // --- DOM Elements ---
+        const mainTable = document.getElementById('main-tool-table');
+        const modals = document.querySelectorAll('.modal');
+        const addToolModal = document.getElementById('add-tool-modal');
+        const checkoutModal = document.getElementById('checkout-modal');
+        const repairModal = document.getElementById('repair-modal');
+
+        // --- Core Functions ---
+        function openModal(modal) { modal.classList.add('active'); }
+        function closeModal() { modals.forEach(m => m.classList.remove('active')); }
+        
+        async function refreshAllData() {
+            await loadMainTable();
+            await populateFormDropdowns();
+        }
+
+        async function loadMainTable() {
+            const { data, error } = await supabase.from('tools').select(`*, sites (project_name)`).order('created_at', { ascending: false });
+            if (error) { console.error('Error loading main table:', error); return; }
+            mainTable.innerHTML = '';
+            data.forEach(tool => {
+                const imageUrl = tool.image_url ? `<img src="${tool.image_url}" class="h-12 w-12 object-cover rounded">` : '-';
+                let statusColor = 'text-gray-500';
+                if(tool.status === 'พร้อมใช้งาน') statusColor = 'text-green-600';
+                if(tool.status === 'ถูกเบิก') statusColor = 'text-yellow-600';
+                if(tool.status === 'ซ่อมบำรุง') statusColor = 'text-red-600';
+                mainTable.innerHTML += `<tr><td class="p-3">${imageUrl}</td><td class="p-3">${tool.item_name} (${tool.item_code || ''})</td><td class="p-3 font-bold ${statusColor}">${tool.status}</td><td class="p-3">${tool.sites?.project_name || 'ส่วนกลาง'}</td></tr>`;
+            });
+        }
+        
+        async function populateFormDropdowns() {
+            const siteSelect = document.getElementById('site_id');
+            const checkoutSelect = document.getElementById('checkout-tool-select');
+            const repairSelect = document.getElementById('repair-tool-select');
+
+            const { data: sites } = await supabase.from('sites').select('*');
+            if(sites) { siteSelect.innerHTML = ''; sites.forEach(s => { siteSelect.innerHTML += `<option value="${s.id}">${s.project_name}</option>`; }); }
+            
+            const { data: availableTools } = await supabase.from('tools').select('*').eq('status', 'พร้อมใช้งาน');
+            checkoutSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>';
+            if (availableTools) { availableTools.forEach(t => checkoutSelect.innerHTML += `<option value="${t.id}" data-code="${t.item_code}">${t.item_name}</option>`); }
+
+            const { data: allTools } = await supabase.from('tools').select('*');
+            repairSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>';
+            if (allTools) { allTools.forEach(t => repairSelect.innerHTML += `<option value="${t.id}" data-code="${t.item_code}" data-name="${t.item_name}">${t.item_name} (${t.item_code})</option>`); }
+        }
+
+        // --- Event Listeners for Buttons ---
+        document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModal));
+        document.getElementById('add-tool-btn').addEventListener('click', () => {
+            const pass = prompt("กรุณาใส่รหัสผ่าน Admin:");
+            if (pass === ADMIN_PASSWORD) { openModal(addToolModal); } 
+            else if (pass !== null) { alert("รหัสผ่านไม่ถูกต้อง!"); }
+        });
+        document.getElementById('checkout-btn').addEventListener('click', () => openModal(checkoutModal));
+        document.getElementById('repair-btn').addEventListener('click', () => openModal(repairModal));
+        
+        // --- Event Listeners for Forms ---
+        document.getElementById('add-tool-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = document.getElementById('submit-button');
+            submitButton.disabled = true; submitButton.innerText = 'กำลังอัปโหลด...';
+            const imageFile = document.getElementById('tool_image').files[0];
+            let imageUrl = null;
+            if (imageFile) {
+                const fileExt = imageFile.name.split('.').pop();
+                const cleanName = imageFile.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = `${Date.now()}_${cleanName}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage.from('tool_images').upload(fileName, imageFile);
+                if (uploadError) { alert('อัปโหลดรูปไม่สำเร็จ: ' + uploadError.message); submitButton.disabled = false; submitButton.innerText = 'บันทึก'; return; }
+                const { data: urlData } = supabase.storage.from('tool_images').getPublicUrl(fileName);
+                imageUrl = urlData.publicUrl;
+            }
+            const toolData = { item_name: document.getElementById('item_name').value, item_code: document.getElementById('item_code').value, brand: document.getElementById('brand').value, model: document.getElementById('model').value, serial_number: document.getElementById('serial_number').value, site_id: document.getElementById('site_id').value, notes: document.getElementById('notes').value, image_url: imageUrl };
+            const { error: insertError } = await supabase.from('tools').insert(toolData);
+            if (insertError) { alert('บันทึกข้อมูลไม่สำเร็จ: ' + insertError.message); } 
+            else { alert('เพิ่มเครื่องมือสำเร็จ!'); e.target.reset(); closeModal(); refreshAllData(); }
+            submitButton.disabled = false; submitButton.innerText = 'บันทึก';
+        });
+
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const toolId = document.getElementById('checkout-tool-select').value;
+            if (!toolId) { alert('กรุณาเลือกเครื่องมือที่ต้องการเบิก'); return; }
+            const selectedOption = document.getElementById('checkout-tool-select').options[document.getElementById('checkout-tool-select').selectedIndex];
+            const itemName = selectedOption.text;
+            const itemCode = selectedOption.getAttribute('data-code');
+            const borrowerName = document.getElementById('borrower-name').value;
+            const lenderName = document.getElementById('lender-name').value;
+            const { error: transError } = await supabase.from('transactions').insert({ tool_id: toolId, borrower_name: borrowerName, lender_name: lenderName, transaction_type: 'เบิก' });
+            if (transError) { alert('เกิดข้อผิดพลาด: ' + transError.message); return; }
+            const { error: toolError } = await supabase.from('tools').update({ status: 'ถูกเบิก' }).eq('id', toolId);
+            if (toolError) { alert('เกิดข้อผิดพลาด: ' + toolError.message); return; }
+            alert('บันทึกการเบิกสำเร็จ! กำลังสร้างใบเบิก...');
+            const printUrl = `print-form.html?itemName=${encodeURIComponent(itemName)}&itemCode=${encodeURIComponent(itemCode || '')}&borrower=${encodeURIComponent(borrowerName)}&lender=${encodeURIComponent(lenderName)}`;
+            window.open(printUrl, '_blank');
+            e.target.reset(); closeModal(); refreshAllData();
+        });
+
+        document.getElementById('repair-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const toolId = document.getElementById('repair-tool-select').value;
+            if (!toolId) { alert('กรุณาเลือกเครื่องมือที่ต้องการแจ้งซ่อม'); return; }
+            const selectedOption = document.getElementById('repair-tool-select').options[document.getElementById('repair-tool-select').selectedIndex];
+            const itemName = selectedOption.getAttribute('data-name');
+            const itemCode = selectedOption.getAttribute('data-code');
+            const reporterName = document.getElementById('reporter-name').value;
+            const problemDescription = document.getElementById('problem-description').value;
+            const { error: toolError } = await supabase.from('tools').update({ status: 'ซ่อมบำรุง' }).eq('id', toolId);
+            if (toolError) { alert('เกิดข้อผิดพลาด: ' + toolError.message); return; }
+            const { error: requestError } = await supabase.from('maintenance_requests').insert({ tool_id: toolId, reporter_name: reporterName, problem_description: problemDescription, status: 'แจ้งซ่อม' });
+            if (requestError) { alert('เกิดข้อผิดพลาด: ' + requestError.message); return; }
+            alert('บันทึกการแจ้งซ่อมสำเร็จ! กำลังสร้างใบแจ้งซ่อม...');
+            const printUrl = `print-repair.html?itemName=${encodeURIComponent(itemName || '')}&itemCode=${encodeURIComponent(itemCode || '')}&reporter=${encodeURIComponent(reporterName)}&problem=${encodeURIComponent(problemDescription)}`;
+            window.open(printUrl, '_blank');
+            e.target.reset(); closeModal(); refreshAllData();
+        });
+
+        // --- Initial Load ---
+        refreshAllData();
+    </script>
+</body>
+</html>
