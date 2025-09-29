@@ -67,6 +67,13 @@
                         </select>
                     </div>
                 </div>
+                <div class="mt-4 col-span-full border-t pt-4">
+                    <label class="block text-sm font-medium text-gray-700">แนบรูปภาพ</label>
+                    <div class="mt-2 flex items-center gap-x-3">
+                        <img id="image-preview" class="h-20 w-20 object-cover rounded-md bg-gray-100" src="https://placehold.co/80x80?text=No+Image">
+                        <input type="file" id="tool_image" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                </div>
                 <div class="flex gap-4 mt-6"><button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded">บันทึก</button><button type="button" class="close-modal-btn w-full bg-gray-300 py-2 px-4 rounded">ยกเลิก</button></div>
             </form>
         </div>
@@ -115,7 +122,6 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrcGd1cnplY3R0bnR2YWV6cmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzYzMTYsImV4cCI6MjA3NDQ1MjMxNn0.Ri7EVc5g_g2HJUYtjJEVHyBb7JYg6W1fT-XlCzmWuLI';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- DOM Elements ---
         const loginModal = document.getElementById('login-modal');
         const mainApp = document.getElementById('main-app');
         const mainTableBody = document.getElementById('main-tool-table');
@@ -123,13 +129,12 @@
         const manageUsersModal = document.getElementById('manage-users-modal');
         const userFormModal = document.getElementById('user-form-modal');
         const usersTableBody = document.getElementById('users-table-body');
+        let currentToolImageUrl = null;
 
-        // --- Utility Functions ---
         function getLoggedInUser() { return sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null; }
         function openModal(modal) { modal.classList.add('active'); }
         function closeModal() { document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); }
 
-        // --- Core App Flow ---
         async function refreshAllData() {
             const user = getLoggedInUser();
             if (!user) return; 
@@ -148,7 +153,6 @@
             document.getElementById('manage-users-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
         }
 
-        // --- Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             const user = getLoggedInUser();
             if (user) {
@@ -172,7 +176,6 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const { data: user } = await supabase.from('users').select('*').eq('username', username).eq('password', password).single();
-
             if (user) {
                 if (user.role === 'site_admin') {
                     const { data: perms } = await supabase.from('user_department_permissions').select('department_name').eq('user_id', user.id);
@@ -188,24 +191,35 @@
             }
         });
 
-        // --- Tool Management ---
         document.getElementById('add-tool-btn').addEventListener('click', () => {
             document.getElementById('add-tool-form').reset();
             document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่';
             document.getElementById('tool_id_for_edit').value = '';
+            document.getElementById('image-preview').src = 'https://placehold.co/80x80?text=No+Image';
+            currentToolImageUrl = null;
             openModal(addToolModal);
         });
 
         document.getElementById('add-tool-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const toolId = document.getElementById('tool_id_for_edit').value;
+            const imageFile = document.getElementById('tool_image').files[0];
+            let newImageUrl = currentToolImageUrl;
+            if (imageFile) {
+                const fileName = `${Date.now()}_${imageFile.name}`;
+                const { error: uploadError } = await supabase.storage.from('tool_images').upload(fileName, imageFile);
+                if (uploadError) { alert('ไม่สามารถอัปโหลดรูปได้: ' + uploadError.message); return; }
+                const { data: urlData } = supabase.storage.from('tool_images').getPublicUrl(fileName);
+                newImageUrl = urlData.publicUrl;
+            }
             const toolData = {
                 item_name: document.getElementById('item_name').value,
                 brand: document.getElementById('brand').value,
                 model: document.getElementById('model').value,
                 serial_number: document.getElementById('serial_number').value,
                 item_code: document.getElementById('item_code').value,
-                department: document.getElementById('department').value
+                department: document.getElementById('department').value,
+                image_url: newImageUrl
             };
             if (toolId) await supabase.from('tools').update(toolData).eq('id', toolId);
             else await supabase.from('tools').insert(toolData);
@@ -217,12 +231,10 @@
             const user = getLoggedInUser();
             if (!user) return;
             let query = supabase.from('tools').select('*');
-
             if (user.role === 'site_admin') {
                 const allowedDepts = user.managed_departments && user.managed_departments.length > 0 ? user.managed_departments : ['dummy_value_to_prevent_error'];
                 query = query.in('department', allowedDepts);
             }
-
             const { data } = await query.order('created_at', { ascending: false });
             mainTableBody.innerHTML = '';
             if (data) {
@@ -257,6 +269,9 @@
                 document.getElementById('serial_number').value = tool.serial_number;
                 document.getElementById('item_code').value = tool.item_code;
                 document.getElementById('department').value = tool.department;
+                currentToolImageUrl = tool.image_url;
+                document.getElementById('image-preview').src = tool.image_url || 'https://placehold.co/80x80?text=No+Image';
+                document.getElementById('tool_image').value = '';
                 openModal(addToolModal);
             }
         }
@@ -268,7 +283,6 @@
             }
         }
 
-        // --- User Management ---
         document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
         
         async function loadUsersTable() {
@@ -304,7 +318,6 @@
             document.getElementById('form-role').value = user.role;
             document.getElementById('form-password').removeAttribute('required');
             document.getElementById('form-password').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน';
-            
             document.querySelectorAll('.dept-checkbox').forEach(cb => cb.checked = assignedDepts.includes(cb.value));
             document.getElementById('department-assignment-container').classList.toggle('hidden', user.role !== 'site_admin');
             openModal(userFormModal);
@@ -321,18 +334,15 @@
             const password = document.getElementById('form-password').value;
             if (password) userData.password = password;
             if (!id && !password) { alert("กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่"); return; }
-
             let updatedUser, error;
             if (id) { ({ data: updatedUser, error } = await supabase.from('users').update(userData).eq('id', id).select().single()); } 
             else { ({ data: updatedUser, error } = await supabase.from('users').insert(userData).select().single()); }
             if (error) { alert("เกิดข้อผิดพลาด: " + error.message); return; }
-
             await supabase.from('user_department_permissions').delete().eq('user_id', updatedUser.id);
             if (updatedUser.role === 'site_admin') {
                 const selectedDepts = Array.from(document.querySelectorAll('.dept-checkbox:checked')).map(cb => ({ user_id: updatedUser.id, department_name: cb.value }));
                 if (selectedDepts.length > 0) {
-                    const { error: permError } = await supabase.from('user_department_permissions').insert(selectedDepts);
-                    if(permError) console.error("Permission Error:", permError);
+                    await supabase.from('user_department_permissions').insert(selectedDepts);
                 }
             }
             alert('บันทึกข้อมูลผู้ใช้สำเร็จ!');
