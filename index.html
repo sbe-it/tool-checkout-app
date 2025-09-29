@@ -202,13 +202,22 @@
 
         document.getElementById('add-tool-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerText = 'กำลังบันทึก...';
+            
             const toolId = document.getElementById('tool_id_for_edit').value;
             const imageFile = document.getElementById('tool_image').files[0];
             let newImageUrl = currentToolImageUrl;
             if (imageFile) {
                 const fileName = `${Date.now()}_${imageFile.name}`;
                 const { error: uploadError } = await supabase.storage.from('tool_images').upload(fileName, imageFile);
-                if (uploadError) { alert('ไม่สามารถอัปโหลดรูปได้: ' + uploadError.message); return; }
+                if (uploadError) {
+                    alert('ไม่สามารถอัปโหลดรูปได้: ' + uploadError.message);
+                    submitButton.disabled = false;
+                    submitButton.innerText = 'บันทึก';
+                    return;
+                }
                 const { data: urlData } = supabase.storage.from('tool_images').getPublicUrl(fileName);
                 newImageUrl = urlData.publicUrl;
             }
@@ -223,6 +232,9 @@
             };
             if (toolId) await supabase.from('tools').update(toolData).eq('id', toolId);
             else await supabase.from('tools').insert(toolData);
+            
+            submitButton.disabled = false;
+            submitButton.innerText = 'บันทึก';
             closeModal();
             refreshAllData();
         });
