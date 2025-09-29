@@ -17,11 +17,22 @@
 <body class="bg-gray-100 p-8">
 
     <div id="login-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 h-full w-full active">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <img src="data:image/png;base64,PASTE_YOUR_BASE64_CODE_HERE" alt="Company Logo" class="h-16 w-auto mx-auto mb-6">
+            <h2 class="text-2xl font-semibold mb-6 text-center">เข้าสู่ระบบ</h2>
+            <form id="login-form" class="space-y-4">
+                <div><label for="username" class="block text-sm font-medium text-gray-700">ชื่อผู้ใช้:</label><input type="text" id="username" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div>
+                <div><label for="password" class="block text-sm font-medium text-gray-700">รหัสผ่าน:</label><input type="password" id="password" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">เข้าสู่ระบบ</button>
+            </form>
         </div>
+    </div>
 
     <div id="main-app">
         <div class="max-w-7xl mx-auto mb-4 flex justify-between items-center">
-            </div>
+            <div><img src="data:image/png;base64,PASTE_YOUR_BASE64_CODE_HERE" alt="Company Logo" class="h-16 w-auto"></div>
+            <div><span id="user-display" class="text-gray-600 mr-4"></span><button id="logout-btn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">ออกจากระบบ</button></div>
+        </div>
         
         <div class="max-w-7xl mx-auto">
             <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex flex-wrap gap-4">
@@ -37,7 +48,7 @@
 
             <div class="bg-white p-6 rounded-lg shadow-md">
                  <h2 class="text-2xl font-semibold text-gray-700 mb-4">รายการเครื่องมือทั้งหมด</h2>
-                 <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="p-3 text-left">รูปภาพ</th><th class="p-3 text-left">ชื่ออุปกรณ์</th><th class="p-3 text-left">ไซด์งาน</th><th class="p-3 text-left">แผนก</th><th class="p-3 text-left">จัดการ</th></tr></thead><tbody id="main-tool-table"></tbody></table></div>
+                 <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="p-3 text-left">รูปภาพ</th><th class="p-3 text-left">ชื่ออุปกรณ์</th><th class="p-3 text-left">ไซด์งาน</th><th class="p-3 text-left">แผนก</th><th class="p-3 text-left">จัดการ</th></tr></thead><tbody id="main-tool-table" class="divide-y divide-gray-200"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -56,106 +67,312 @@
                     <div><label>ไซด์งาน</label><select id="site_id" class="mt-1 block w-full border p-2 rounded"></select></div>
                     <div class="md:col-span-2"><label>แผนก</label><select id="department" class="mt-1 block w-full border p-2 rounded"><option value="">-- ไม่ระบุ --</option><option>ก่อสร้าง</option><option>ไฟฟ้า</option></select></div>
                 </div>
+                <div class="mt-4 border-t pt-4"><label class="block text-sm font-medium">แนบรูปภาพ</label><div class="mt-2 flex items-center gap-x-3"><img id="image-preview" class="h-20 w-20 object-cover rounded-md bg-gray-100" src="https://placehold.co/80x80?text=No+Image"><input type="file" id="tool_image" accept="image/*" class="block w-full text-sm ..."></div></div>
                 <div class="flex gap-4 mt-6"><button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded">บันทึก</button><button type="button" class="close-modal-btn w-full bg-gray-300 py-2 px-4 rounded">ยกเลิก</button></div>
             </form>
         </div>
     </div>
 
     <div id="manage-sites-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
-        </div>
-
-    <div id="user-form-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
-            <div id="site-assignment-container" class="hidden">
-                <label>ไซด์งานที่รับผิดชอบ</label>
-                <div id="form-sites-checkboxes" class="site-checkbox-list"></div>
-            </div>
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-3xl max-h-full overflow-y-auto">
+            <h2 class="text-2xl font-semibold mb-4">จัดการไซด์งาน</h2>
+            <form id="add-site-form" class="space-y-4 mb-6 p-4 border rounded-md">
+                <h3 class="text-xl font-medium">เพิ่มไซด์งานใหม่</h3>
+                <div><label>ชื่อโครงการ/ไซด์งาน:</label><input type="text" id="site_project_name" required class="mt-1 block w-full border p-2 rounded"></div>
+                <div><label>ชื่อผู้ดูแล:</label><input type="text" id="site_manager_name" class="mt-1 block w-full border p-2 rounded"></div>
+                <div class="flex gap-4"><button type="submit" class="w-full bg-purple-600 text-white py-2 px-4 rounded">เพิ่มไซด์งาน</button></div>
+            </form>
+            <h3 class="text-xl font-medium mb-2">รายการไซด์งาน</h3>
+            <div id="sites-table-container" class="overflow-x-auto"></div>
+            <button type="button" class="close-modal-btn mt-4 bg-gray-300 font-bold py-2 px-4 rounded-lg">ปิด</button>
         </div>
     </div>
     
+    <div id="manage-users-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-full overflow-y-auto">
+            <h2 class="text-2xl font-semibold mb-4">จัดการผู้ใช้งาน</h2>
+            <button id="add-new-user-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mb-4">➕ เพิ่มผู้ใช้ใหม่</button>
+            <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="p-3 text-left">Username</th><th class="p-3 text-left">Role</th><th class="p-3 text-left">จัดการ</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
+            <button type="button" class="close-modal-btn mt-4 bg-gray-300 font-bold py-2 px-4 rounded-lg">ปิด</button>
+        </div>
+    </div>
+    
+    <div id="user-form-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+            <h2 id="user-modal-title" class="text-2xl font-semibold mb-4">เพิ่มผู้ใช้ใหม่</h2>
+            <form id="user-form" class="space-y-4">
+                <input type="hidden" id="user-id-for-edit">
+                <div><label>Username</label><input id="form-username" required class="mt-1 block w-full border p-2 rounded"></div>
+                <div><label>Password</label><input id="form-password" class="mt-1 block w-full border p-2 rounded" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"></div>
+                <div>
+                    <label>Role</label>
+                    <select id="form-role" required class="mt-1 block w-full border p-2 rounded">
+                        <option value="admin">Admin (จัดการทุกอย่าง)</option>
+                        <option value="site_admin">Admin หน้างาน (ผูกกับไซด์งาน)</option>
+                        <option value="office_admin">Admin ออฟฟิศ (ดูอย่างเดียว)</option>
+                    </select>
+                </div>
+                <div id="site-assignment-container" class="hidden">
+                    <label>ไซด์งานที่รับผิดชอบ</label>
+                    <div id="form-sites-checkboxes" class="site-checkbox-list"></div>
+                </div>
+                <div class="flex gap-4"><button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded">บันทึก</button><button type="button" class="close-modal-btn w-full bg-gray-300 py-2 px-4 rounded">ยกเลิก</button></div>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-        const SUPABASE_URL = '...'; // Your Supabase URL
-        const SUPABASE_KEY = '...'; // Your Supabase Key
+        const SUPABASE_URL = 'https://wkpgurzecttntvaezrga.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrcGd1cnplY3R0bnR2YWV6cmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzYzMTYsImV4cCI6MjA3NDQ1MjMxNn0.Ri7EVc5g_g2HJUYtjJEVHyBb7JYg6W1fT-XlCzmWuLI';
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- Utility ---
-        function getLoggedInUser() { return sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null; }
-        // ... openModal, closeModal ...
+        const loginModal = document.getElementById('login-modal');
+        const mainApp = document.getElementById('main-app');
+        const mainTableBody = document.getElementById('main-tool-table');
+        const addToolModal = document.getElementById('add-tool-modal');
+        const manageSitesModal = document.getElementById('manage-sites-modal');
+        const manageUsersModal = document.getElementById('manage-users-modal');
+        const userFormModal = document.getElementById('user-form-modal');
+        const usersTableBody = document.getElementById('users-table-body');
+        const sitesOverviewContainer = document.getElementById('sites-overview-container');
+        let currentToolImageUrl = null;
 
-        // --- Core Flow & Permissions ---
+        function getLoggedInUser() { return sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null; }
+        function openModal(modal) { modal.classList.add('active'); }
+        function closeModal() { document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); }
+
         async function refreshAllData() {
             const user = getLoggedInUser();
             if (!user) return; 
             checkUserPermissions();
-            await loadSitesOverview();
-            await loadMainTable();
-        }
-        function checkUserPermissions() {
-            // ... Logic เดิม แต่เพิ่ม manage-sites-btn เข้ามา ...
+            await Promise.all([loadSitesOverview(), loadMainTable()]);
         }
 
-        // --- Login / Logout ---
+        function checkUserPermissions() {
+            const user = getLoggedInUser();
+            if (!user) return;
+            const isSuperAdmin = user.role === 'admin';
+            const isOfficeAdmin = user.role === 'office_admin';
+            document.getElementById('add-tool-btn').style.display = isOfficeAdmin ? 'none' : 'inline-block';
+            document.getElementById('manage-sites-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
+            document.getElementById('manage-users-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getLoggedInUser();
+            if (user) {
+                mainApp.style.display = 'block';
+                document.getElementById('user-display').innerText = `สวัสดี, ${user.username} (${user.role})`;
+                refreshAllData();
+            } else { loginModal.classList.add('active'); }
+        });
+        document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModal));
+        document.getElementById('logout-btn').addEventListener('click', () => { sessionStorage.removeItem('user'); window.location.reload(); });
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
-            // ... Logic เดิม แต่เปลี่ยนไปดึง user_site_permissions ...
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const { data: user } = await supabase.from('users').select('*').eq('username', username).eq('password', password).single();
+            if (user) {
+                if (user.role === 'site_admin') {
+                    const { data: perms } = await supabase.from('user_site_permissions').select('site_id').eq('user_id', user.id);
+                    user.managed_sites = perms ? perms.map(p => p.site_id) : [];
+                }
+                sessionStorage.setItem('user', JSON.stringify(user));
+                loginModal.classList.remove('active');
+                mainApp.style.display = 'block';
+                document.getElementById('user-display').innerText = `สวัสดี, ${user.username} (${user.role})`;
+                await refreshAllData();
+            } else { alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
         });
 
         // --- Site Management ---
-        document.getElementById('manage-sites-btn').addEventListener('click', async () => { /* ... */ });
-        // ...ฟังก์ชัน addSite, deleteSite, loadSitesTable...
-
+        document.getElementById('manage-sites-btn').addEventListener('click', async () => { await loadSitesTable(); openModal(manageSitesModal); });
+        document.getElementById('add-site-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await supabase.from('sites').insert({ project_name: document.getElementById('site_project_name').value, manager_name: document.getElementById('site_manager_name').value });
+            document.getElementById('add-site-form').reset();
+            await loadSitesTable();
+            await refreshAllData();
+        });
+        async function loadSitesTable() {
+            const { data: sites } = await supabase.from('sites').select('*').order('project_name');
+            let html = '<table class="min-w-full divide-y"><thead>...</thead><tbody>';
+            if (sites) sites.forEach(s => html += `<tr><td class="p-2">${s.project_name}</td><td class="p-2">${s.manager_name || '-'}</td><td class="p-2"><button data-id="${s.id}" class="delete-site-btn text-red-600">ลบ</button></td></tr>`);
+            html += '</tbody></table>';
+            document.getElementById('sites-table-container').innerHTML = html;
+            document.querySelectorAll('.delete-site-btn').forEach(b => b.addEventListener('click', (e) => deleteSite(e.target.dataset.id)));
+        }
+        async function deleteSite(siteId) {
+            if (confirm('ยืนยันการลบไซด์งาน?')) {
+                await supabase.from('sites').delete().eq('id', siteId);
+                await loadSitesTable();
+                await refreshAllData();
+            }
+        }
         async function loadSitesOverview() {
-            const { data: sites } = await supabase.from('sites').select('id, project_name');
+            const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
             const { data: tools } = await supabase.from('tools').select('site_id, department');
-            
-            const overviewContainer = document.getElementById('sites-overview-container');
-            overviewContainer.innerHTML = '';
-
-            sites.forEach(site => {
-                const siteTools = tools.filter(t => t.site_id === site.id);
-                const constructionCount = siteTools.filter(t => t.department === 'ก่อสร้าง').length;
-                const electricalCount = siteTools.filter(t => t.department === 'ไฟฟ้า').length;
-                const totalCount = siteTools.length;
-
-                overviewContainer.innerHTML += `
-                    <div class="site-card bg-purple-100 p-6 rounded-lg...">
-                        <h3 class="font-semibold text-lg">${site.project_name}</h3>
-                        <p class="font-bold text-xl mt-2">รวม: ${totalCount} ชิ้น</p>
-                        <div class="text-sm mt-1">
-                            <span>ก่อสร้าง: ${constructionCount}</span> | 
-                            <span>ไฟฟ้า: ${electricalCount}</span>
-                        </div>
-                    </div>`;
-            });
+            sitesOverviewContainer.innerHTML = '';
+            if (sites) {
+                sites.forEach(site => {
+                    const siteTools = tools.filter(t => t.site_id === site.id);
+                    const constructionCount = siteTools.filter(t => t.department === 'ก่อสร้าง').length;
+                    const electricalCount = siteTools.filter(t => t.department === 'ไฟฟ้า').length;
+                    sitesOverviewContainer.innerHTML += `
+                        <div class="site-card bg-purple-100 p-6 rounded-lg shadow-md border-2 border-purple-300">
+                            <h3 class="font-semibold text-lg text-purple-800">${site.project_name}</h3>
+                            <p class="font-bold text-xl mt-2">รวม: ${siteTools.length} ชิ้น</p>
+                            <div class="text-sm mt-1 text-gray-700"><span>ก่อสร้าง: ${constructionCount}</span> | <span>ไฟฟ้า: ${electricalCount}</span></div>
+                        </div>`;
+                });
+            }
         }
 
         // --- Tool Management ---
         document.getElementById('add-tool-btn').addEventListener('click', async () => {
-            // ... รีเซ็ตฟอร์ม ...
+            document.getElementById('add-tool-form').reset();
+            document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่';
+            document.getElementById('tool_id_for_edit').value = '';
+            document.getElementById('image-preview').src = 'https://placehold.co/80x80?text=No+Image';
+            currentToolImageUrl = null;
             await populateSiteDropdown();
             openModal(addToolModal);
         });
         document.getElementById('add-tool-form').addEventListener('submit', async (e) => {
-            // ... Logic เดิม แต่เพิ่มการบันทึก site_id และ department ...
+            e.preventDefault();
+            const toolId = document.getElementById('tool_id_for_edit').value;
+            const imageFile = document.getElementById('tool_image').files[0];
+            let newImageUrl = currentToolImageUrl;
+            if (imageFile) { /* ... Upload logic ... */ }
+            const toolData = {
+                item_name: document.getElementById('item_name').value, brand: document.getElementById('brand').value, model: document.getElementById('model').value,
+                serial_number: document.getElementById('serial_number').value, item_code: document.getElementById('item_code').value,
+                site_id: document.getElementById('site_id').value || null, department: document.getElementById('department').value, image_url: newImageUrl
+            };
+            if (toolId) await supabase.from('tools').update(toolData).eq('id', toolId);
+            else await supabase.from('tools').insert(toolData);
+            closeModal();
+            refreshAllData();
         });
-
         async function loadMainTable() {
+            const user = getLoggedInUser();
+            if (!user) return;
             let query = supabase.from('tools').select('*, sites(project_name)');
-            // ... Logic เดิมในการกรองสิทธิ์ site_admin ...
-
-            const { data } = await query;
-            // ... สร้างตารางโดยแสดงทั้ง site และ department ...
+            if (user.role === 'site_admin') {
+                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['dummy-uuid'];
+                query = query.in('site_id', allowedSites);
+            }
+            const { data } = await query.order('created_at', { ascending: false });
+            mainTableBody.innerHTML = '';
+            if (data) {
+                const canManage = user.role === 'admin' || user.role === 'site_admin';
+                data.forEach(tool => {
+                    const manageButtons = canManage ? `<button data-id="${tool.id}" class="edit-tool-btn...">แก้ไข</button>${user.role === 'admin' ? `<button data-id="${tool.id}" class="delete-tool-btn...">ลบ</button>` : ''}` : 'ไม่มีสิทธิ์';
+                    const imageUrl = tool.image_url ? `<img src="${tool.image_url}" class="h-12 w-12...">` : '<div>ไม่มีรูป</div>';
+                    mainTableBody.innerHTML += `<tr><td class="p-3">${imageUrl}</td><td class="p-3">${tool.item_name}</td><td class="p-3">${tool.sites?.project_name || 'ส่วนกลาง'}</td><td class="p-3">${tool.department || '-'}</td><td class="p-3">${manageButtons}</td></tr>`;
+                });
+                document.querySelectorAll('.edit-tool-btn').forEach(b => b.addEventListener('click', (e) => loadToolForEdit(e.target.dataset.id)));
+                document.querySelectorAll('.delete-tool-btn').forEach(b => b.addEventListener('click', (e) => deleteTool(e.target.dataset.id)));
+            }
         }
-
-        async function populateSiteDropdown() {
-            // ... ฟังก์ชันสำหรับดึงข้อมูล sites มาใส่ใน dropdown ของฟอร์มเพิ่มเครื่องมือ ...
+        async function loadToolForEdit(toolId) {
+            const { data: tool } = await supabase.from('tools').select('*').eq('id', toolId).single();
+            if (tool) {
+                document.getElementById('tool-modal-title').innerText = `แก้ไข: ${tool.item_name}`;
+                document.getElementById('tool_id_for_edit').value = tool.id;
+                document.getElementById('item_name').value = tool.item_name; document.getElementById('brand').value = tool.brand; document.getElementById('model').value = tool.model;
+                document.getElementById('serial_number').value = tool.serial_number; document.getElementById('item_code').value = tool.item_code;
+                document.getElementById('department').value = tool.department;
+                currentToolImageUrl = tool.image_url;
+                document.getElementById('image-preview').src = tool.image_url || 'https://placehold.co/80x80?text=No+Image';
+                document.getElementById('tool_image').value = '';
+                await populateSiteDropdown(tool.site_id);
+                openModal(addToolModal);
+            }
+        }
+        async function deleteTool(toolId) { if (confirm('ยืนยันการลบ?')) { await supabase.from('tools').delete().eq('id', toolId); refreshAllData(); } }
+        async function populateSiteDropdown(selectedId = null) {
+            const select = document.getElementById('site_id');
+            const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
+            select.innerHTML = '<option value="">-- ส่วนกลาง --</option>';
+            if (sites) sites.forEach(s => select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`);
         }
 
         // --- User Management ---
-        // ... โค้ดทั้งหมดเหมือนเดิม แต่เปลี่ยนจากการจัดการ department permission กลับไปเป็น site permission ...
-        
-        // --- Init ---
-        document.addEventListener('DOMContentLoaded', () => { /* ... */ });
+        document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
+        async function loadUsersTable() {
+            const { data } = await supabase.from('users').select('*').order('username');
+            usersTableBody.innerHTML = '';
+            if (data) {
+                data.forEach(user => { usersTableBody.innerHTML += `<tr><td class="p-3">${user.username}</td><td class="p-3">${user.role}</td><td class="p-3"><button data-id="${user.id}" class="edit-user-btn...">แก้ไข</button> | <button data-id="${user.id}" data-username="${user.username}" class="delete-user-btn...">ลบ</button></td></tr>`; });
+                document.querySelectorAll('#manage-users-modal .edit-user-btn').forEach(b => b.addEventListener('click', (e) => openUserFormForEdit(e.target.dataset.id)));
+                document.querySelectorAll('#manage-users-modal .delete-user-btn').forEach(b => b.addEventListener('click', (e) => deleteUser(e.target.dataset.id, e.target.dataset.username)));
+            }
+        }
+        document.getElementById('add-new-user-btn').addEventListener('click', async () => {
+            document.getElementById('user-form').reset();
+            document.getElementById('user-modal-title').innerText = 'เพิ่มผู้ใช้ใหม่';
+            document.getElementById('user-id-for-edit').value = '';
+            document.getElementById('form-password').setAttribute('required', 'true');
+            document.getElementById('site-assignment-container').classList.add('hidden');
+            await populateSiteCheckboxes([]);
+            openModal(userFormModal);
+        });
+        async function openUserFormForEdit(userId) {
+            const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+            const { data: perms } = await supabase.from('user_site_permissions').select('site_id').eq('user_id', userId);
+            const assignedSites = perms ? perms.map(p => p.site_id) : [];
+            document.getElementById('user-form').reset();
+            document.getElementById('user-modal-title').innerText = `แก้ไข: ${user.username}`;
+            document.getElementById('user-id-for-edit').value = user.id;
+            document.getElementById('form-username').value = user.username;
+            document.getElementById('form-role').value = user.role;
+            document.getElementById('form-password').removeAttribute('required');
+            await populateSiteCheckboxes(assignedSites);
+            document.getElementById('site-assignment-container').classList.toggle('hidden', user.role !== 'site_admin');
+            openModal(userFormModal);
+        }
+        async function populateSiteCheckboxes(selectedIds = []) {
+            const container = document.getElementById('form-sites-checkboxes');
+            const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
+            container.innerHTML = '';
+            if (sites) sites.forEach(s => container.innerHTML += `<label class="block"><input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id)?'checked':''} class="mr-2 site-checkbox">${s.project_name}</label>`);
+        }
+        document.getElementById('form-role').addEventListener('change', (e) => {
+            document.getElementById('site-assignment-container').classList.toggle('hidden', e.target.value !== 'site_admin');
+        });
+        document.getElementById('user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('user-id-for-edit').value;
+            const userData = { username: document.getElementById('form-username').value, role: document.getElementById('form-role').value };
+            const password = document.getElementById('form-password').value;
+            if (password) userData.password = password;
+            if (!id && !password) { alert("กรุณากำหนดรหัสผ่าน"); return; }
+            let updatedUser, error;
+            if (id) { ({ data: updatedUser, error } = await supabase.from('users').update(userData).eq('id', id).select().single()); } 
+            else { ({ data: updatedUser, error } = await supabase.from('users').insert(userData).select().single()); }
+            if (error) { alert("Error: " + error.message); return; }
+            await supabase.from('user_site_permissions').delete().eq('user_id', updatedUser.id);
+            if (updatedUser.role === 'site_admin') {
+                const selectedSites = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => ({ user_id: updatedUser.id, site_id: cb.value }));
+                if (selectedSites.length > 0) await supabase.from('user_site_permissions').insert(selectedSites);
+            }
+            alert('บันทึกสำเร็จ!');
+            closeModal();
+            await loadUsersTable();
+        });
+        async function deleteUser(userId, username) {
+            const currentUser = getLoggedInUser();
+            if(currentUser && currentUser.id === userId) { alert("ไม่สามารถลบบัญชีตัวเอง"); return; }
+            if (confirm(`ยืนยันการลบผู้ใช้ "${username}"?`)) {
+                await supabase.from('users').delete().eq('id', userId);
+                alert('ลบผู้ใช้สำเร็จ'); 
+                await loadUsersTable();
+            }
+        }
     </script>
 </body>
 </html>
