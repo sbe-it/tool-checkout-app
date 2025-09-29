@@ -9,19 +9,22 @@
         .modal { display: none; } 
         .modal.active { display: flex; align-items: center; justify-content: center; } 
         #main-app { display: none; }
-        .dept-checkbox-list { /* เปลี่ยนจาก site-checkbox-list */
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-        }
+        .dept-checkbox-list { max-height: 150px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 0.5rem; border-radius: 0.375rem; }
     </style>
 </head>
 <body class="bg-gray-100 p-8">
 
     <div id="login-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 h-full w-full active">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
+            <img src="data:image/png;base64,PASTE_YOUR_BASE64_CODE_HERE" alt="Company Logo" class="h-16 w-auto mx-auto mb-6">
+            <h2 class="text-2xl font-semibold mb-6 text-center">เข้าสู่ระบบ</h2>
+            <form id="login-form" class="space-y-4">
+                <div><label for="username" class="block text-sm font-medium text-gray-700">ชื่อผู้ใช้:</label><input type="text" id="username" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div>
+                <div><label for="password" class="block text-sm font-medium text-gray-700">รหัสผ่าน:</label><input type="password" id="password" required class="mt-1 block w-full border border-gray-300 rounded-md p-2"></div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">เข้าสู่ระบบ</button>
+            </form>
         </div>
+    </div>
 
     <div id="main-app">
         <div class="max-w-7xl mx-auto mb-4 flex justify-between items-center">
@@ -69,6 +72,15 @@
         </div>
     </div>
 
+    <div id="manage-users-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-full overflow-y-auto">
+            <h2 class="text-2xl font-semibold mb-4">จัดการผู้ใช้งาน</h2>
+            <button id="add-new-user-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg mb-4">➕ เพิ่มผู้ใช้ใหม่</button>
+            <div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="p-3 text-left">Username</th><th class="p-3 text-left">Role</th><th class="p-3 text-left">จัดการ</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
+            <button type="button" class="close-modal-btn mt-4 bg-gray-300 font-bold py-2 px-4 rounded-lg">ปิด</button>
+        </div>
+    </div>
+    
     <div id="user-form-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full p-4">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
             <h2 id="user-modal-title" class="text-2xl font-semibold mb-4">เพิ่มผู้ใช้ใหม่</h2>
@@ -95,27 +107,95 @@
             </form>
         </div>
     </div>
-    
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-        // ... (โค้ด Supabase client เหมือนเดิม) ...
-        const supabase = createClient('https://wkpgurzecttntvaezrga.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrcGd1cnplY3R0bnR2YWV6cmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzYzMTYsImV4cCI6MjA3NDQ1MjMxNn0.Ri7EVc5g_g2HJUYtjJEVHyBb7JYg6W1fT-XlCzmWuLI');
+        
+        const SUPABASE_URL = 'https://wkpgurzecttntvaezrga.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrcGd1cnplY3R0bnR2YWV6cmdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4NzYzMTYsImV4cCI6MjA3NDQ1MjMxNn0.Ri7EVc5g_g2HJUYtjJEVHyBb7JYg6W1fT-XlCzmWuLI';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- DOM Elements ---
-        const addToolModal = document.getElementById('add-tool-modal');
+        const loginModal = document.getElementById('login-modal');
+        const mainApp = document.getElementById('main-app');
         const mainTableBody = document.getElementById('main-tool-table');
-        // ... (DOM elements อื่นๆ) ...
-        
+        const addToolModal = document.getElementById('add-tool-modal');
+        const manageUsersModal = document.getElementById('manage-users-modal');
+        const userFormModal = document.getElementById('user-form-modal');
+        const usersTableBody = document.getElementById('users-table-body');
+
+        // --- Utility Functions ---
+        function getLoggedInUser() { return sessionStorage.getItem('user') ? JSON.parse(sessionStorage.getItem('user')) : null; }
+        function openModal(modal) { modal.classList.add('active'); }
+        function closeModal() { document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active')); }
+
+        // --- Core App Flow ---
+        async function refreshAllData() {
+            const user = getLoggedInUser();
+            if (!user) return; 
+            checkUserPermissions();
+            await loadMainTable();
+        }
+
+        function checkUserPermissions() {
+            const user = getLoggedInUser();
+            if (!user) return;
+            const isSuperAdmin = user.role === 'admin';
+            const isOfficeAdmin = user.role === 'office_admin';
+            document.getElementById('add-tool-btn').style.display = isOfficeAdmin ? 'none' : 'inline-block';
+            document.getElementById('checkout-btn').style.display = isOfficeAdmin ? 'none' : 'inline-block';
+            document.getElementById('repair-btn').style.display = isOfficeAdmin ? 'none' : 'inline-block';
+            document.getElementById('manage-users-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
+        }
+
         // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getLoggedInUser();
+            if (user) {
+                mainApp.style.display = 'block';
+                document.getElementById('user-display').innerText = `สวัสดี, ${user.username} (${user.role})`;
+                refreshAllData();
+            } else {
+                loginModal.classList.add('active');
+            }
+        });
+
+        document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModal));
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            sessionStorage.removeItem('user');
+            window.location.reload();
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const { data: user } = await supabase.from('users').select('*').eq('username', username).eq('password', password).single();
+
+            if (user) {
+                if (user.role === 'site_admin') {
+                    const { data: perms } = await supabase.from('user_department_permissions').select('department_name').eq('user_id', user.id);
+                    user.managed_departments = perms ? perms.map(p => p.department_name) : [];
+                }
+                sessionStorage.setItem('user', JSON.stringify(user));
+                loginModal.classList.remove('active');
+                mainApp.style.display = 'block';
+                document.getElementById('user-display').innerText = `สวัสดี, ${user.username} (${user.role})`;
+                await refreshAllData();
+            } else {
+                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+            }
+        });
+
+        // --- Tool Management ---
         document.getElementById('add-tool-btn').addEventListener('click', () => {
             document.getElementById('add-tool-form').reset();
             document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่';
             document.getElementById('tool_id_for_edit').value = '';
             openModal(addToolModal);
         });
-        // ... (Event Listeners อื่นๆ) ...
-        
-        // --- Tool Management (แก้ไขใหม่) ---
+
         document.getElementById('add-tool-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const toolId = document.getElementById('tool_id_for_edit').value;
@@ -127,12 +207,8 @@
                 item_code: document.getElementById('item_code').value,
                 department: document.getElementById('department').value
             };
-
-            if (toolId) {
-                await supabase.from('tools').update(toolData).eq('id', toolId);
-            } else {
-                await supabase.from('tools').insert(toolData);
-            }
+            if (toolId) await supabase.from('tools').update(toolData).eq('id', toolId);
+            else await supabase.from('tools').insert(toolData);
             closeModal();
             refreshAllData();
         });
@@ -140,36 +216,142 @@
         async function loadMainTable() {
             const user = getLoggedInUser();
             if (!user) return;
-            
-            let query = supabase.from('tools').select(`*`);
-            
-            // ... (โค้ดกรองข้อมูลสำหรับ Site Admin จะต้องเปลี่ยนไปใช้ department) ...
+            let query = supabase.from('tools').select('*');
 
-            const { data, error } = await query.order('created_at', { ascending: false });
-            
+            if (user.role === 'site_admin') {
+                const allowedDepts = user.managed_departments && user.managed_departments.length > 0 ? user.managed_departments : ['dummy_value_to_prevent_error'];
+                query = query.in('department', allowedDepts);
+            }
+
+            const { data } = await query.order('created_at', { ascending: false });
             mainTableBody.innerHTML = '';
             if (data) {
+                const canManage = user.role === 'admin' || user.role === 'site_admin';
                 data.forEach(tool => {
-                    mainTableBody.innerHTML += `
-                        <tr>
-                            <td class="p-3">...img...</td>
-                            <td class="p-3">${tool.item_name}</td>
-                            <td class="p-3">${tool.serial_number || '-'}</td>
-                            <td class="p-3">${tool.department || '-'}</td>
-                            <td class="p-3">
-                                <button class="edit-tool-btn...">แก้ไข</button>
-                                <button class="delete-tool-btn...">ลบ</button>
-                            </td>
-                        </tr>
-                    `;
+                    const manageButtons = canManage ? `
+                        <button data-id="${tool.id}" class="edit-tool-btn text-yellow-600 text-sm font-medium">แก้ไข</button>
+                        ${user.role === 'admin' ? `<button data-id="${tool.id}" class="delete-tool-btn text-red-600 text-sm font-medium ml-2">ลบ</button>` : ''}
+                    ` : 'ไม่มีสิทธิ์';
+                    const imageUrl = tool.image_url ? `<img src="${tool.image_url}" class="h-12 w-12 object-cover rounded">` : '<div class="h-12 w-12 flex items-center justify-center bg-gray-200 text-gray-500 rounded text-xs">ไม่มีรูป</div>';
+                    mainTableBody.innerHTML += `<tr>
+                        <td class="p-3">${imageUrl}</td>
+                        <td class="p-3">${tool.item_name}</td>
+                        <td class="p-3">${tool.serial_number || '-'}</td>
+                        <td class="p-3">${tool.department || '-'}</td>
+                        <td class="p-3">${manageButtons}</td>
+                    </tr>`;
                 });
-                // ... (เพิ่ม event listener ให้ปุ่ม แก้ไข/ลบ) ...
+                document.querySelectorAll('.edit-tool-btn').forEach(b => b.addEventListener('click', (e) => loadToolForEdit(e.target.dataset.id)));
+                document.querySelectorAll('.delete-tool-btn').forEach(b => b.addEventListener('click', (e) => deleteTool(e.target.dataset.id)));
             }
         }
+
+        async function loadToolForEdit(toolId) {
+            const { data: tool } = await supabase.from('tools').select('*').eq('id', toolId).single();
+            if (tool) {
+                document.getElementById('tool-modal-title').innerText = `แก้ไข: ${tool.item_name}`;
+                document.getElementById('tool_id_for_edit').value = tool.id;
+                document.getElementById('item_name').value = tool.item_name;
+                document.getElementById('brand').value = tool.brand;
+                document.getElementById('model').value = tool.model;
+                document.getElementById('serial_number').value = tool.serial_number;
+                document.getElementById('item_code').value = tool.item_code;
+                document.getElementById('department').value = tool.department;
+                openModal(addToolModal);
+            }
+        }
+
+        async function deleteTool(toolId) {
+            if (confirm('ยืนยันการลบเครื่องมือนี้?')) {
+                await supabase.from('tools').delete().eq('id', toolId);
+                refreshAllData();
+            }
+        }
+
+        // --- User Management ---
+        document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
         
-        // ... (ฟังก์ชันที่เหลือทั้งหมดของระบบ Login, User Management, etc.) ...
-        // หมายเหตุ: โค้ดส่วน User Management สำหรับผูกสิทธิ์กับแผนกจะต้องมีการปรับปรุงเพิ่มเติม
-        // แต่โค้ดด้านบนนี้จะทำให้ฟอร์มเพิ่มสินค้าทำงานได้ตามที่คุณต้องการแล้วครับ
+        async function loadUsersTable() {
+            const { data } = await supabase.from('users').select('*').order('username');
+            usersTableBody.innerHTML = '';
+            if (data) {
+                data.forEach(user => {
+                    usersTableBody.innerHTML += `<tr><td class="p-3">${user.username}</td><td class="p-3">${user.role}</td><td class="p-3"><button data-id="${user.id}" class="edit-user-btn text-yellow-600">แก้ไข</button> | <button data-id="${user.id}" data-username="${user.username}" class="delete-user-btn text-red-600">ลบ</button></td></tr>`;
+                });
+                document.querySelectorAll('#manage-users-modal .edit-user-btn').forEach(b => b.addEventListener('click', (e) => openUserFormForEdit(e.target.dataset.id)));
+                document.querySelectorAll('#manage-users-modal .delete-user-btn').forEach(b => b.addEventListener('click', (e) => deleteUser(e.target.dataset.id, e.target.dataset.username)));
+            }
+        }
+
+        document.getElementById('add-new-user-btn').addEventListener('click', () => {
+            document.getElementById('user-form').reset();
+            document.getElementById('user-modal-title').innerText = 'เพิ่มผู้ใช้ใหม่';
+            document.getElementById('user-id-for-edit').value = '';
+            document.getElementById('form-password').setAttribute('required', 'true');
+            document.getElementById('form-password').placeholder = 'ต้องระบุ';
+            document.getElementById('department-assignment-container').classList.add('hidden');
+            openModal(userFormModal);
+        });
+
+        async function openUserFormForEdit(userId) {
+            const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+            const { data: perms } = await supabase.from('user_department_permissions').select('department_name').eq('user_id', userId);
+            const assignedDepts = perms ? perms.map(p => p.department_name) : [];
+            document.getElementById('user-form').reset();
+            document.getElementById('user-modal-title').innerText = `แก้ไข: ${user.username}`;
+            document.getElementById('user-id-for-edit').value = user.id;
+            document.getElementById('form-username').value = user.username;
+            document.getElementById('form-role').value = user.role;
+            document.getElementById('form-password').removeAttribute('required');
+            document.getElementById('form-password').placeholder = 'เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน';
+            
+            document.querySelectorAll('.dept-checkbox').forEach(cb => cb.checked = assignedDepts.includes(cb.value));
+            document.getElementById('department-assignment-container').classList.toggle('hidden', user.role !== 'site_admin');
+            openModal(userFormModal);
+        }
+
+        document.getElementById('form-role').addEventListener('change', (e) => {
+            document.getElementById('department-assignment-container').classList.toggle('hidden', e.target.value !== 'site_admin');
+        });
+
+        document.getElementById('user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('user-id-for-edit').value;
+            const userData = { username: document.getElementById('form-username').value, role: document.getElementById('form-role').value };
+            const password = document.getElementById('form-password').value;
+            if (password) userData.password = password;
+            if (!id && !password) { alert("กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่"); return; }
+
+            let updatedUser, error;
+            if (id) { ({ data: updatedUser, error } = await supabase.from('users').update(userData).eq('id', id).select().single()); } 
+            else { ({ data: updatedUser, error } = await supabase.from('users').insert(userData).select().single()); }
+            if (error) { alert("เกิดข้อผิดพลาด: " + error.message); return; }
+
+            await supabase.from('user_department_permissions').delete().eq('user_id', updatedUser.id);
+            if (updatedUser.role === 'site_admin') {
+                const selectedDepts = Array.from(document.querySelectorAll('.dept-checkbox:checked')).map(cb => ({ user_id: updatedUser.id, department_name: cb.value }));
+                if (selectedDepts.length > 0) {
+                    const { error: permError } = await supabase.from('user_department_permissions').insert(selectedDepts);
+                    if(permError) console.error("Permission Error:", permError);
+                }
+            }
+            alert('บันทึกข้อมูลผู้ใช้สำเร็จ!');
+            closeModal();
+            await loadUsersTable();
+        });
+
+        async function deleteUser(userId, username) {
+            const currentUser = getLoggedInUser();
+            if(currentUser && currentUser.id === userId) {
+                alert("คุณไม่สามารถลบบัญชีของตัวเองได้");
+                return;
+            }
+            if (confirm(`ยืนยันการลบผู้ใช้ "${username}"?`)) {
+                await supabase.from('users').delete().eq('id', userId);
+                alert('ลบผู้ใช้สำเร็จ'); 
+                await loadUsersTable();
+            }
+        }
     </script>
 </body>
 </html>
