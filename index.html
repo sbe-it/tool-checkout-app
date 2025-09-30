@@ -35,12 +35,22 @@
         </div>
         
         <div class="max-w-7xl mx-auto">
-            <div class="mb-6 bg-white p-4 rounded-lg shadow-md flex flex-wrap gap-4">
-                <button id="add-tool-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">➕ เพิ่มเครื่องมือ</button>
-                <button id="manage-sites-btn" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg">⚙️ จัดการไซด์งาน</button>
-                <button id="checkout-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg">📋 เบิกเครื่องมือ</button>
-                <button id="repair-btn" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg">🔧 แจ้งซ่อม</button>
-                <button id="manage-users-btn" class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">👤 จัดการผู้ใช้งาน</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">การใช้งานประจำวัน</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="checkout-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg w-full md:w-auto">📋 เบิกเครื่องมือ</button>
+                        <button id="repair-btn" class="bg-orange-500 text-white font-bold py-2 px-4 rounded-lg w-full md:w-auto">🔧 แจ้งซ่อม</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">ส่วนจัดการระบบ (Admin)</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <button id="add-tool-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">➕ เพิ่มเครื่องมือ</button>
+                        <button id="manage-sites-btn" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg">⚙️ จัดการไซด์งาน</button>
+                        <button id="manage-users-btn" class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">👤 จัดการผู้ใช้งาน</button>
+                    </div>
+                </div>
             </div>
             
             <div class="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -79,6 +89,10 @@
             <h2 class="text-2xl font-semibold mb-4">เบิกเครื่องมือ</h2>
             <form id="checkout-form" class="space-y-4">
                 <div><label>เลือกเครื่องมือ (เฉพาะที่พร้อมใช้งาน):</label><select id="checkout-tool-select" required class="mt-1 block w-full border p-2 rounded"></select></div>
+                <hr><p class="font-semibold">ระบุปลายทาง:</p>
+                <div><label>ไซด์งาน:</label><select id="checkout-site-select" required class="mt-1 block w-full border p-2 rounded"></select></div>
+                <div><label>แผนก:</label><select id="checkout-dept-select" required class="mt-1 block w-full border p-2 rounded"><option value="">-- เลือกแผนก --</option><option value="ก่อสร้าง">ก่อสร้าง</option><option value="ไฟฟ้า">ไฟฟ้า</option></select></div>
+                <hr>
                 <div><label>ชื่อผู้เบิก:</label><input type="text" id="borrower-name" required class="mt-1 block w-full border p-2 rounded"></div>
                 <div><label>ชื่อผู้จ่าย:</label><input type="text" id="lender-name" required class="mt-1 block w-full border p-2 rounded"></div>
                 <div class="flex gap-4 pt-4"><button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded">ยืนยันและพิมพ์</button><button type="button" class="close-modal-btn w-full bg-gray-300 py-2 px-4 rounded">ยกเลิก</button></div>
@@ -191,7 +205,7 @@
             document.getElementById('manage-sites-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
             document.getElementById('manage-users-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
         }
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             const user = getLoggedInUser();
             if (user) {
@@ -200,7 +214,6 @@
                 refreshAllData();
             } else { loginModal.classList.add('active'); }
         });
-
         document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModal));
         document.getElementById('logout-btn').addEventListener('click', () => { sessionStorage.removeItem('user'); window.location.reload(); });
 
@@ -221,7 +234,7 @@
                 await refreshAllData();
             } else { alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
         });
-        
+
         document.getElementById('add-tool-btn').addEventListener('click', async () => {
             document.getElementById('add-tool-form').reset();
             document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่';
@@ -231,26 +244,10 @@
             await populateSiteDropdown();
             openModal(addToolModal);
         });
-
-        document.getElementById('manage-sites-btn').addEventListener('click', async () => {
-            await loadSitesTable();
-            openModal(manageSitesModal);
-        });
-
-        document.getElementById('checkout-btn').addEventListener('click', async () => {
-            await populateCheckoutTools();
-            openModal(checkoutModal);
-        });
-
-        document.getElementById('repair-btn').addEventListener('click', async () => {
-            await populateRepairTools();
-            openModal(repairModal);
-        });
-
-        document.getElementById('manage-users-btn').addEventListener('click', async () => {
-            await loadUsersTable();
-            openModal(manageUsersModal);
-        });
+        document.getElementById('manage-sites-btn').addEventListener('click', async () => { await loadSitesTable(); openModal(manageSitesModal); });
+        document.getElementById('checkout-btn').addEventListener('click', async () => { await populateCheckoutForm(); openModal(checkoutModal); });
+        document.getElementById('repair-btn').addEventListener('click', async () => { await populateRepairTools(); openModal(repairModal); });
+        document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
 
         async function loadSitesOverview() {
             const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
@@ -290,8 +287,7 @@
                 data.forEach(tool => {
                     const manageButtons = canManage ? `<button data-id="${tool.id}" class="edit-tool-btn text-yellow-600 text-sm font-medium">แก้ไข</button>${user.role === 'admin' ? `<button data-id="${tool.id}" class="delete-tool-btn text-red-600 text-sm font-medium ml-2">ลบ</button>` : ''}` : 'ไม่มีสิทธิ์';
                     const imageUrl = tool.image_url ? `<img src="${tool.image_url}" class="h-12 w-12 object-cover rounded">` : '<div class="h-12 w-12 flex items-center justify-center bg-gray-200 text-gray-500 rounded text-xs">ไม่มีรูป</div>';
-                    let statusColor = 'text-gray-500';
-                    if (tool.status === 'พร้อมใช้งาน') statusColor = 'text-green-600'; if (tool.status === 'ถูกเบิก') statusColor = 'text-yellow-600'; if (tool.status === 'ซ่อมบำรุง') statusColor = 'text-red-600';
+                    let statusColor = 'text-gray-500'; if (tool.status === 'พร้อมใช้งาน') statusColor = 'text-green-600'; if (tool.status === 'ถูกเบิก') statusColor = 'text-yellow-600'; if (tool.status === 'ซ่อมบำรุง') statusColor = 'text-red-600';
                     mainTableBody.innerHTML += `<tr>
                         <td class="p-3">${imageUrl}</td><td class="p-3">${tool.item_name}</td>
                         <td class="p-3">${tool.sites?.project_name || 'ส่วนกลาง'}</td><td class="p-3">${tool.department || '-'}</td>
@@ -330,9 +326,9 @@
         async function deleteTool(toolId) { if (confirm('ยืนยันการลบ?')) { await supabase.from('tools').delete().eq('id', toolId); refreshAllData(); } }
         async function populateSiteDropdown(selectedId = null) { const select = document.getElementById('site_id'); const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name'); select.innerHTML = '<option value="">-- ส่วนกลาง --</option>'; if (sites) sites.forEach(s => select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`); }
         
-        async function populateCheckoutTools() { const select = document.getElementById('checkout-tool-select'); const { data: tools } = await supabase.from('tools').select('*').eq('status', 'พร้อมใช้งาน'); select.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => select.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name}</option>`); }
-        async function populateRepairTools() { const select = document.getElementById('repair-tool-select'); const { data: tools } = await supabase.from('tools').select('*'); select.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => select.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name}</option>`); }
-        document.getElementById('checkout-form').addEventListener('submit', async (e) => { e.preventDefault(); const select = document.getElementById('checkout-tool-select'); const toolId = select.value; const selOpt = select.options[select.selectedIndex]; const toolName = selOpt.dataset.name, toolCode = selOpt.dataset.code; const borrower = document.getElementById('borrower-name').value, lender = document.getElementById('lender-name').value; await supabase.from('tools').update({ status: 'ถูกเบิก' }).eq('id', toolId); await supabase.from('transactions').insert({ tool_id: toolId, borrower_name: borrower, lender_name: lender }); const url = `print-checkout.html?toolName=${encodeURIComponent(toolName)}&toolCode=${encodeURIComponent(toolCode)}&borrower=${encodeURIComponent(borrower)}&lender=${encodeURIComponent(lender)}`; window.open(url, '_blank'); closeModal(); refreshAllData(); });
+        async function populateCheckoutForm() { const toolSelect = document.getElementById('checkout-tool-select'); const { data: tools } = await supabase.from('tools').select('*, sites(project_name)').eq('status', 'พร้อมใช้งาน'); toolSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => toolSelect.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); const siteSelect = document.getElementById('checkout-site-select'); const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name'); siteSelect.innerHTML = '<option value="" disabled selected>-- เลือกไซด์งานปลายทาง --</option>'; if(sites) sites.forEach(s => siteSelect.innerHTML += `<option value="${s.id}">${s.project_name}</option>`); }
+        async function populateRepairTools() { const select = document.getElementById('repair-tool-select'); const { data: tools } = await supabase.from('tools').select('*, sites(project_name)'); select.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => select.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); }
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => { e.preventDefault(); const toolSelect = document.getElementById('checkout-tool-select'); const toolId = toolSelect.value; const toolOption = toolSelect.options[toolSelect.selectedIndex]; const siteSelect = document.getElementById('checkout-site-select'); const destSiteId = siteSelect.value; const destSiteName = siteSelect.options[siteSelect.selectedIndex].text; const deptSelect = document.getElementById('checkout-dept-select'); const destDeptName = deptSelect.value; const borrower = document.getElementById('borrower-name').value; const lender = document.getElementById('lender-name').value; await supabase.from('tools').update({ status: 'ถูกเบิก', site_id: destSiteId, department: destDeptName }).eq('id', toolId); await supabase.from('transactions').insert({ tool_id: toolId, borrower_name: borrower, lender_name: lender }); const url = `print-checkout.html?toolName=${encodeURIComponent(toolOption.dataset.name)}&toolCode=${encodeURIComponent(toolOption.dataset.code)}&borrower=${encodeURIComponent(borrower)}&lender=${encodeURIComponent(lender)}&destSite=${encodeURIComponent(destSiteName)}&destDept=${encodeURIComponent(destDeptName)}`; window.open(url, '_blank'); closeModal(); refreshAllData(); });
         document.getElementById('repair-form').addEventListener('submit', async (e) => { e.preventDefault(); const select = document.getElementById('repair-tool-select'); const toolId = select.value; const selOpt = select.options[select.selectedIndex]; const toolName = selOpt.dataset.name, toolCode = selOpt.dataset.code; const reporter = document.getElementById('reporter-name').value, problem = document.getElementById('problem-description').value; await supabase.from('tools').update({ status: 'ซ่อมบำรุง' }).eq('id', toolId); await supabase.from('maintenance_requests').insert({ tool_id: toolId, reporter_name: reporter, problem_description: problem }); const url = `print-repair.html?toolName=${encodeURIComponent(toolName)}&toolCode=${encodeURIComponent(toolCode)}&reporter=${encodeURIComponent(reporter)}&problem=${encodeURIComponent(problem)}`; window.open(url, '_blank'); closeModal(); refreshAllData(); });
 
         document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
