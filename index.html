@@ -324,7 +324,27 @@
         document.getElementById('add-tool-form').addEventListener('submit', async (e) => { e.preventDefault(); const submitButton = e.target.querySelector('button[type="submit"]'); submitButton.disabled = true; submitButton.innerText = 'กำลังบันทึก...'; const toolId = document.getElementById('tool_id_for_edit').value; const imageFile = document.getElementById('tool_image').files[0]; let newImageUrl = currentToolImageUrl; if (imageFile) { const fileName = `${Date.now()}_${imageFile.name}`; const { error: uploadError } = await supabase.storage.from('tool_images').upload(fileName, imageFile); if (uploadError) { alert('Upload Error: ' + uploadError.message); submitButton.disabled = false; submitButton.innerText = 'บันทึก'; return; } const { data: urlData } = supabase.storage.from('tool_images').getPublicUrl(fileName); newImageUrl = urlData.publicUrl; } const toolData = { item_name: document.getElementById('item_name').value, brand: document.getElementById('brand').value, model: document.getElementById('model').value, serial_number: document.getElementById('serial_number').value, item_code: document.getElementById('item_code').value, site_id: document.getElementById('site_id').value || null, department: document.getElementById('department').value, image_url: newImageUrl }; if (toolId) await supabase.from('tools').update(toolData).eq('id', toolId); else await supabase.from('tools').insert(toolData); submitButton.disabled = false; submitButton.innerText = 'บันทึก'; closeModal(); refreshAllData(); });
         async function loadToolForEdit(toolId) { const { data: tool } = await supabase.from('tools').select('*').eq('id', toolId).single(); if (tool) { document.getElementById('tool-modal-title').innerText = `แก้ไข: ${tool.item_name}`; document.getElementById('tool_id_for_edit').value = tool.id; document.getElementById('item_name').value = tool.item_name; document.getElementById('brand').value = tool.brand; document.getElementById('model').value = tool.model; document.getElementById('serial_number').value = tool.serial_number; document.getElementById('item_code').value = tool.item_code; document.getElementById('department').value = tool.department; currentToolImageUrl = tool.image_url; document.getElementById('image-preview').src = tool.image_url || 'https://placehold.co/80x80?text=No+Image'; document.getElementById('tool_image').value = ''; await populateSiteDropdown(tool.site_id); openModal(addToolModal); } }
         async function deleteTool(toolId) { if (confirm('ยืนยันการลบ?')) { await supabase.from('tools').delete().eq('id', toolId); refreshAllData(); } }
-        async function populateSiteDropdown(selectedId = null) { const select = document.getElementById('site_id'); const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name'); select.innerHTML = '<option value="">-- ส่วนกลาง --</option>'; if (sites) sites.forEach(s => select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`); }
+        
+        async function populateSiteDropdown(selectedId = null) {
+            const select = document.getElementById('site_id');
+            const user = getLoggedInUser();
+            select.innerHTML = '';
+            select.disabled = false;
+
+            if (user.role === 'site_admin') {
+                if (user.managed_sites && user.managed_sites.length > 0) {
+                    const { data: sites } = await supabase.from('sites').select('id, project_name').in('id', user.managed_sites).order('project_name');
+                    if (sites) sites.forEach(s => { select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`; });
+                } else {
+                    select.innerHTML = '<option value="">คุณยังไม่ได้รับมอบหมายไซด์งาน</option>';
+                    select.disabled = true;
+                }
+            } else {
+                select.innerHTML = '<option value="">-- ส่วนกลาง --</option>';
+                const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
+                if (sites) sites.forEach(s => { select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`; });
+            }
+        }
         
         async function populateCheckoutForm() { const toolSelect = document.getElementById('checkout-tool-select'); const { data: tools } = await supabase.from('tools').select('*, sites(project_name)').eq('status', 'พร้อมใช้งาน'); toolSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => toolSelect.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); const siteSelect = document.getElementById('checkout-site-select'); const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name'); siteSelect.innerHTML = '<option value="" disabled selected>-- เลือกไซด์งานปลายทาง --</option>'; if(sites) sites.forEach(s => siteSelect.innerHTML += `<option value="${s.id}">${s.project_name}</option>`); }
         async function populateRepairTools() { const select = document.getElementById('repair-tool-select'); const { data: tools } = await supabase.from('tools').select('*, sites(project_name)'); select.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => select.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); }
