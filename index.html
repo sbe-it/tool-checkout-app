@@ -277,7 +277,7 @@
             if (!user) return;
             let query = supabase.from('tools').select('*, sites(project_name)');
             if (user.role === 'site_admin') {
-                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['dummy-uuid'];
+                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000']; // Use a dummy UUID to return empty
                 query = query.in('site_id', allowedSites);
             }
             const { data } = await query.order('created_at', { ascending: false });
@@ -328,9 +328,7 @@
         async function populateSiteDropdown(selectedId = null) {
             const select = document.getElementById('site_id');
             const user = getLoggedInUser();
-            select.innerHTML = '';
-            select.disabled = false;
-
+            select.innerHTML = ''; select.disabled = false;
             if (user.role === 'site_admin') {
                 if (user.managed_sites && user.managed_sites.length > 0) {
                     const { data: sites } = await supabase.from('sites').select('id, project_name').in('id', user.managed_sites).order('project_name');
