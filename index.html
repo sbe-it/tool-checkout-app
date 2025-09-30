@@ -250,7 +250,14 @@
         document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
 
         async function loadSitesOverview() {
-            const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name');
+            const user = getLoggedInUser();
+            if (!user) return;
+            let siteQuery = supabase.from('sites').select('id, project_name').order('project_name');
+            if (user.role === 'site_admin') {
+                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000'];
+                siteQuery = siteQuery.in('id', allowedSites);
+            }
+            const { data: sites } = await siteQuery;
             const { data: tools } = await supabase.from('tools').select('site_id, department');
             sitesOverviewContainer.innerHTML = '';
             if (sites && sites.length > 0) {
@@ -268,7 +275,7 @@
                 });
                 document.querySelectorAll('.site-card').forEach(card => card.addEventListener('click', (e) => showSiteDetails(e.currentTarget.dataset.siteId)));
             } else {
-                sitesOverviewContainer.innerHTML = '<p class="text-gray-500">ยังไม่มีไซด์งานในระบบ</p>';
+                sitesOverviewContainer.innerHTML = '<p class="text-gray-500">ยังไม่มีไซด์งานในระบบ หรือคุณยังไม่ได้รับมอบหมายไซด์งาน</p>';
             }
         }
         
@@ -277,7 +284,7 @@
             if (!user) return;
             let query = supabase.from('tools').select('*, sites(project_name)');
             if (user.role === 'site_admin') {
-                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000']; // Use a dummy UUID to return empty
+                const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000'];
                 query = query.in('site_id', allowedSites);
             }
             const { data } = await query.order('created_at', { ascending: false });
