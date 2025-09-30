@@ -11,14 +11,18 @@
         }
     </style>
 </head>
-<body class="p-8">
-    <div class="max-w-2xl mx-auto border p-10 bg-white rounded-lg">
+<body class="p-8 bg-gray-100">
+    <div class="max-w-2xl mx-auto border p-10 bg-white rounded-lg shadow-lg">
         <h1 class="text-2xl font-bold text-center mb-8">ใบเบิกเครื่องมือ</h1>
-        <div class="grid grid-cols-2 gap-4 text-lg mb-8">
-            <p><strong>วันที่:</strong> <span id="date"></span></p>
-            <p><strong>เลขที่เอกสาร:</strong> <span id="doc-no"></span></p>
-            <p class="col-span-2"><strong>รายการ:</strong> <span id="tool-name" class="font-semibold"></span></p>
-            <p class="col-span-2"><strong>รหัส/S/N:</strong> <span id="tool-code" class="font-semibold"></span></p>
+        <div class="space-y-3 text-lg mb-8">
+            <div class="flex justify-between">
+                <p><strong>วันที่:</strong> <span id="date"></span></p>
+                <p><strong>เลขที่เอกสาร:</strong> <span id="doc-no"></span></p>
+            </div>
+            <p><strong>รายการ:</strong> <span id="tool-name" class="font-semibold"></span></p>
+            <p><strong>รหัส/S/N:</strong> <span id="tool-code" class="font-semibold"></span></p>
+            <p class="border-t pt-3 mt-3"><strong>เบิกไปใช้ที่ไซด์งาน:</strong> <span id="dest-site" class="font-semibold text-blue-600"></span></p>
+            <p><strong>สำหรับแผนก:</strong> <span id="dest-dept" class="font-semibold text-blue-600"></span></p>
         </div>
         <div class="grid grid-cols-2 gap-16 mt-20 text-center">
             <div>
@@ -39,12 +43,15 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const now = new Date();
-        document.getElementById('date').innerText = now.toLocaleDateString('th-TH');
+        document.getElementById('date').innerText = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
         document.getElementById('doc-no').innerText = `CHK-${now.getTime()}`;
         document.getElementById('tool-name').innerText = params.get('toolName') || 'N/A';
         document.getElementById('tool-code').innerText = params.get('toolCode') || 'N/A';
         document.getElementById('borrower-name').innerText = params.get('borrower') || '.....................';
         document.getElementById('lender-name').innerText = params.get('lender') || '.....................';
+        document.getElementById('dest-site').innerText = params.get('destSite') || 'N/A';
+        document.getElementById('dest-dept').innerText = params.get('destDept') || 'N/A';
         window.onload = () => window.print();
-    </body
+    </script>
+</body>
 </html>
