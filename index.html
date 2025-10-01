@@ -1,4 +1,4 @@
-ฃ<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -61,6 +61,7 @@
                         <button id="add-tool-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">➕ เพิ่มเครื่องมือ</button>
                         <button id="manage-sites-btn" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg">⚙️ จัดการไซด์งาน</button>
                         <button id="manage-users-btn" class="bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">👤 จัดการผู้ใช้งาน</button>
+                        <button id="export-log-btn" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg">📥 Export Log</button>
                     </div>
                 </div>
             </div>
@@ -110,7 +111,8 @@
                 <div><label>ไซด์งาน:</label><select id="checkout-site-select" required class="mt-1 block w-full border p-2 rounded"></select></div>
                 <div><label>แผนก:</label><select id="checkout-dept-select" required class="mt-1 block w-full border p-2 rounded"><option value="">-- เลือกแผนก --</option><option value="ก่อสร้าง">ก่อสร้าง</option><option value="ไฟฟ้า">ไฟฟ้า</option></select></div>
                 <hr>
-                <div><label>ชื่อผู้เบิก (ตัวคุณเอง):</label><input type="text" id="borrower-name" required class="mt-1 block w-full border p-2 rounded" readonly></div>
+                <div><label>ชื่อผู้เบิก:</label><input type="text" id="borrower-name" required class="mt-1 block w-full border p-2 rounded"></div>
+                <div><label>ชื่อผู้จ่าย (ผู้อนุมัติ):</label><input type="text" id="lender-name" required class="mt-1 block w-full border p-2 rounded"></div>
                 <div class="flex gap-4 pt-4"><button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded">ส่งคำขอเบิก</button><button type="button" class="close-modal-btn w-full bg-gray-300 py-2 px-4 rounded">ยกเลิก</button></div>
             </form>
         </div>
@@ -232,6 +234,7 @@
             document.getElementById('repair-btn').style.display = isSuperAdmin || isSiteAdmin || isOfficeAdmin ? 'inline-block' : 'none';
             document.getElementById('manage-sites-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
             document.getElementById('manage-users-btn').style.display = isSuperAdmin ? 'inline-block' : 'none';
+            document.getElementById('export-log-btn').style.display = canApprove ? 'inline-block' : 'none';
             document.getElementById('notification-container').style.display = canApprove ? 'flex' : 'none';
             document.getElementById('approval-section').style.display = canApprove ? 'block' : 'none';
         }
@@ -266,30 +269,22 @@
                 subscribeToChanges();
             } else { alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'); }
         });
-
+        
         function subscribeToChanges() {
             console.log('Subscribing to realtime changes...');
-            supabase.channel('public:tools')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tools' }, () => refreshAllData()).subscribe();
-            supabase.channel('public:tool_requests')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tool_requests' }, () => refreshAllData()).subscribe();
-            supabase.channel('public:sites')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'sites' }, () => refreshAllData()).subscribe();
+            supabase.channel('public-db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
+                    console.log('Change received!', payload);
+                    refreshAllData();
+                }).subscribe();
         }
 
-        document.getElementById('add-tool-btn').addEventListener('click', async () => {
-            document.getElementById('add-tool-form').reset();
-            document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่';
-            document.getElementById('tool_id_for_edit').value = '';
-            document.getElementById('image-preview').src = 'https://placehold.co/80x80?text=No+Image';
-            currentToolImageUrl = null;
-            await populateSiteDropdown();
-            openModal(addToolModal);
-        });
+        document.getElementById('add-tool-btn').addEventListener('click', async () => { document.getElementById('add-tool-form').reset(); document.getElementById('tool-modal-title').innerText = 'เพิ่มเครื่องมือใหม่'; document.getElementById('tool_id_for_edit').value = ''; document.getElementById('image-preview').src = 'https://placehold.co/80x80?text=No+Image'; currentToolImageUrl = null; await populateSiteDropdown(); openModal(addToolModal); });
         document.getElementById('manage-sites-btn').addEventListener('click', async () => { await loadSitesTable(); openModal(manageSitesModal); });
         document.getElementById('checkout-btn').addEventListener('click', async () => { await populateCheckoutForm(); openModal(checkoutModal); });
         document.getElementById('repair-btn').addEventListener('click', async () => { await populateRepairTools(); openModal(repairModal); });
         document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
+        document.getElementById('export-log-btn').addEventListener('click', exportLogToCSV);
 
         async function logActivity(action, details) { const user = getLoggedInUser(); if (!user || user.role !== 'site_admin') return; await supabase.from('activity_log').insert({ username: user.username, action, details }); }
         async function loadNotifications() { const user = getLoggedInUser(); if (!user || (user.role !== 'admin' && user.role !== 'office_admin')) return; const { data, count } = await supabase.from('activity_log').select('*', { count: 'exact' }).eq('is_read', false).order('created_at', { ascending: false }); const badge = document.getElementById('notification-badge'); const list = document.getElementById('notification-list'); list.innerHTML = ''; if (count > 0) { badge.innerText = count; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); } if (data && data.length > 0) { data.forEach(log => { list.innerHTML += `<div class="border-b pb-2 mb-2 text-sm"><p><strong>${log.username}</strong> ${log.action}</p><p class="text-gray-600">${log.details}</p><p class="text-xs text-gray-400">${new Date(log.created_at).toLocaleString('th-TH')}</p></div>`; }); } else { list.innerHTML = '<p class="text-sm text-gray-500">ไม่มีการแจ้งเตือนใหม่</p>'; } }
@@ -325,7 +320,7 @@
             }
         }
         async function handleApproval(requestId, decision) { const user = getLoggedInUser(); const { data: request } = await supabase.from('tool_requests').select('*, tool:tools(*)').eq('id', requestId).single(); if (!request) return; if (decision === 'approved') { if (request.request_type === 'checkout') { await supabase.from('tools').update({ status: 'ถูกเบิก', site_id: request.destination_site_id, department: request.destination_department }).eq('id', request.tool_id); } else { await supabase.from('tools').update({ status: 'พร้อมใช้งาน', site_id: null, department: request.tool.department }).eq('id', request.tool_id); } } else { if (request.request_type === 'checkout') { await supabase.from('tools').update({ status: 'พร้อมใช้งาน' }).eq('id', request.tool_id); } else { await supabase.from('tools').update({ status: 'ถูกเบิก' }).eq('id', request.tool_id); } } await supabase.from('tool_requests').update({ status: decision, approver_id: user.id }).eq('id', requestId); }
-        async function handleReturnTool(toolId, toolName) { if (!confirm(`ยืนยันการส่งคำขอคืนเครื่องมือ "${toolName}"?`)) return; const user = getLoggedInUser(); await supabase.from('tool_requests').insert({ requester_id: user.id, tool_id: toolId, request_type: 'return' }); await supabase.from('tools').update({ status: 'รออนุมัติคืน' }).eq('id', toolId); await logActivity('ส่งคำขอคืน', toolName); alert('ส่งคำขอคืนเรียบร้อยแล้ว'); refreshAllData(); }
+        async function handleReturnTool(toolId, toolName) { if (!confirm(`ยืนยันการส่งคำขอคืนเครื่องมือ "${toolName}"?`)) return; const user = getLoggedInUser(); await supabase.from('tool_requests').insert({ requester_id: user.id, tool_id: toolId, request_type: 'return' }); await supabase.from('tools').update({ status: 'รออนุมัติคืน' }).eq('id', toolId); await logActivity('ส่งคำขอคืน', toolName); alert('ส่งคำขอคืนเรียบร้อยแล้ว'); }
         
         async function loadSitesOverview() { const user = getLoggedInUser(); if (!user) return; let siteQuery = supabase.from('sites').select('id, project_name').order('project_name'); if (user.role === 'site_admin') { const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000']; siteQuery = siteQuery.in('id', allowedSites); } const { data: sites } = await siteQuery; const { data: tools } = await supabase.from('tools').select('site_id, department'); sitesOverviewContainer.innerHTML = ''; if (sites && sites.length > 0) { sites.forEach(site => { const siteTools = tools.filter(t => t.site_id === site.id); const constructionCount = siteTools.filter(t => t.department === 'ก่อสร้าง').length; const electricalCount = siteTools.filter(t => t.department === 'ไฟฟ้า').length; sitesOverviewContainer.innerHTML += `<div class="site-card bg-purple-100 p-6 rounded-lg shadow-md border-2 border-purple-300" data-site-id="${site.id}"><h3 class="font-semibold text-lg text-purple-800">${site.project_name}</h3><p class="font-bold text-xl mt-2">รวม: ${siteTools.length} ชิ้น</p><div class="text-sm mt-1 text-gray-700"><span>ก่อสร้าง: ${constructionCount}</span> | <span>ไฟฟ้า: ${electricalCount}</span></div><p class="text-xs text-purple-600 mt-2">คลิกเพื่อดูรายละเอียด</p></div>`; }); document.querySelectorAll('.site-card').forEach(card => card.addEventListener('click', (e) => showSiteDetails(e.currentTarget.dataset.siteId))); } else { sitesOverviewContainer.innerHTML = '<p class="text-gray-500">ยังไม่มีไซด์งานในระบบ หรือคุณยังไม่ได้รับมอบหมายไซด์งาน</p>'; } }
         async function loadMainTable() { const user = getLoggedInUser(); if (!user) return; let query = supabase.from('tools').select('*, sites(project_name)'); if (user.role === 'site_admin') { const allowedSites = user.managed_sites && user.managed_sites.length > 0 ? user.managed_sites : ['00000000-0000-0000-0000-000000000000']; query = query.or(`site_id.in.(${allowedSites.join(',')}),site_id.is.null`); } const { data } = await query.order('created_at', { ascending: false }); mainTableBody.innerHTML = ''; if (data) { data.forEach(tool => { const canEdit = user.role === 'admin' || user.role === 'office_admin' || (user.role === 'site_admin' && (tool.site_id === null || user.managed_sites.includes(tool.site_id))); const canDelete = user.role === 'admin'; const canReturn = user.role === 'site_admin' && tool.status === 'ถูกเบิก' && user.managed_sites.includes(tool.site_id); let manageButtons = ''; if (canEdit) manageButtons += `<button data-id="${tool.id}" class="edit-tool-btn text-yellow-600 text-sm font-medium">แก้ไข</button>`; if (canDelete) manageButtons += `<button data-id="${tool.id}" class="delete-tool-btn text-red-600 text-sm font-medium ml-2">ลบ</button>`; if (canReturn) manageButtons += `<button data-id="${tool.id}" data-name="${tool.item_name}" class="return-tool-btn bg-blue-500 text-white text-sm font-medium ml-2 px-2 py-1 rounded">ขอคืน</button>`; if(manageButtons === '') manageButtons = 'ไม่มีสิทธิ์'; const imageUrl = tool.image_url ? `<img src="${tool.image_url}" class="h-12 w-12 object-cover rounded">` : '<div class="h-12 w-12 flex items-center justify-center bg-gray-200 text-gray-500 rounded text-xs">ไม่มีรูป</div>'; let statusColor = 'text-gray-500'; if (tool.status === 'พร้อมใช้งาน') statusColor = 'text-green-600'; if (tool.status === 'ถูกเบิก') statusColor = 'text-yellow-600'; if (tool.status === 'ซ่อมบำรุง') statusColor = 'text-red-600'; if (tool.status === 'รออนุมัติเบิก') statusColor = 'text-blue-500'; if (tool.status === 'รออนุมัติคืน') statusColor = 'text-purple-500'; mainTableBody.innerHTML += `<tr><td class="p-3">${imageUrl}</td><td class="p-3">${tool.item_name}</td><td class="p-3">${tool.sites?.project_name || 'ส่วนกลาง'}</td><td class="p-3">${tool.department || '-'}</td><td class="p-3 font-bold ${statusColor}">${tool.status}</td><td class="p-3">${tool.item_code || '-'}</td><td class="p-3">${manageButtons}</td></tr>`; }); document.querySelectorAll('.edit-tool-btn').forEach(b => b.addEventListener('click', (e) => loadToolForEdit(e.target.dataset.id))); document.querySelectorAll('.delete-tool-btn').forEach(b => b.addEventListener('click', (e) => deleteTool(e.target.dataset.id))); document.querySelectorAll('.return-tool-btn').forEach(b => b.addEventListener('click', (e) => handleReturnTool(e.target.dataset.id, e.target.dataset.name))); } }
@@ -341,9 +336,31 @@
         
         async function populateSiteDropdown(selectedId = null) { const select = document.getElementById('site_id'); const user = getLoggedInUser(); select.innerHTML = ''; select.disabled = false; if (user.role === 'site_admin') { if (user.managed_sites && user.managed_sites.length > 0) { const { data: sites } = await supabase.from('sites').select('id, project_name').in('id', user.managed_sites).order('project_name'); if (sites) sites.forEach(s => { select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`; }); } else { select.innerHTML = '<option value="">ไม่มีไซด์งานที่ได้รับมอบหมาย</option>'; select.disabled = true; } } else { select.innerHTML = '<option value="">-- ส่วนกลาง --</option>'; const { data: sites } = await supabase.from('sites').select('id, project_name').order('project_name'); if (sites) sites.forEach(s => { select.innerHTML += `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.project_name}</option>`; }); } }
         
-        async function populateCheckoutForm() { const user = getLoggedInUser(); document.getElementById('borrower-name').value = user.username; const toolSelect = document.getElementById('checkout-tool-select'); const { data: tools } = await supabase.from('tools').select('*, sites(project_name)').eq('status', 'พร้อมใช้งาน'); toolSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => toolSelect.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); const siteSelect = document.getElementById('checkout-site-select'); siteSelect.innerHTML = '<option value="" disabled selected>-- เลือกไซด์งานปลายทาง --</option>'; let siteQuery = supabase.from('sites').select('id, project_name').order('project_name'); if(user.role === 'site_admin') { if (user.managed_sites && user.managed_sites.length > 0) { siteQuery = siteQuery.in('id', user.managed_sites); } else { siteSelect.innerHTML = '<option value="">ไม่มีไซด์งานที่ได้รับมอบหมาย</option>'; return; } } const { data: sites } = await siteQuery; if(sites) sites.forEach(s => siteSelect.innerHTML += `<option value="${s.id}">${s.project_name}</option>`); }
+        async function populateCheckoutForm() {
+            const user = getLoggedInUser();
+            document.getElementById('checkout-form').reset();
+            const toolSelect = document.getElementById('checkout-tool-select');
+            const { data: tools } = await supabase.from('tools').select('*, sites(project_name)').eq('status', 'พร้อมใช้งาน');
+            toolSelect.innerHTML = '<option value="" disabled selected>-- เลือก --</option>';
+            if(tools) tools.forEach(t => toolSelect.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`);
+            
+            const siteSelect = document.getElementById('checkout-site-select');
+            siteSelect.innerHTML = '<option value="" disabled selected>-- เลือกไซด์งานปลายทาง --</option>';
+            let siteQuery = supabase.from('sites').select('id, project_name').order('project_name');
+
+            if(user.role === 'site_admin') {
+                if (user.managed_sites && user.managed_sites.length > 0) {
+                    siteQuery = siteQuery.in('id', user.managed_sites);
+                } else {
+                    siteSelect.innerHTML = '<option value="">ไม่มีไซด์งานที่ได้รับมอบหมาย</option>';
+                    return;
+                }
+            }
+            const { data: sites } = await siteQuery;
+            if(sites) sites.forEach(s => siteSelect.innerHTML += `<option value="${s.id}">${s.project_name}</option>`);
+        }
         async function populateRepairTools() { const select = document.getElementById('repair-tool-select'); document.getElementById('reporter-name').value = getLoggedInUser().username; const { data: tools } = await supabase.from('tools').select('*, sites(project_name)'); select.innerHTML = '<option value="" disabled selected>-- เลือก --</option>'; if(tools) tools.forEach(t => select.innerHTML += `<option value="${t.id}" data-name="${t.item_name}" data-code="${t.serial_number || t.item_code}">${t.item_name} (${t.sites?.project_name || 'ส่วนกลาง'})</option>`); }
-        document.getElementById('checkout-form').addEventListener('submit', async (e) => { e.preventDefault(); const user = getLoggedInUser(); const toolSelect = document.getElementById('checkout-tool-select'); const toolId = toolSelect.value; const toolOption = toolSelect.options[toolSelect.selectedIndex]; const toolName = toolOption.dataset.name; const destSiteId = document.getElementById('checkout-site-select').value; const destDept = document.getElementById('checkout-dept-select').value; await supabase.from('tool_requests').insert({ requester_id: user.id, tool_id: toolId, request_type: 'checkout', destination_site_id: destSiteId, destination_department: destDept }); await supabase.from('tools').update({ status: 'รออนุมัติเบิก' }).eq('id', toolId); await logActivity('ส่งคำขอเบิก', toolName); alert('ส่งคำขอเบิกเรียบร้อยแล้ว'); closeModal(); refreshAllData(); });
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => { e.preventDefault(); const user = getLoggedInUser(); const toolSelect = document.getElementById('checkout-tool-select'); const toolId = toolSelect.value; const toolOption = toolSelect.options[toolSelect.selectedIndex]; const toolName = toolOption.dataset.name; const destSiteId = document.getElementById('checkout-site-select').value; const destDept = document.getElementById('checkout-dept-select').value; const borrower = document.getElementById('borrower-name').value; await supabase.from('tool_requests').insert({ requester_id: user.id, tool_id: toolId, request_type: 'checkout', destination_site_id: destSiteId, destination_department: destDept }); await supabase.from('tools').update({ status: 'รออนุมัติเบิก' }).eq('id', toolId); await logActivity('ส่งคำขอเบิก', `${toolName} สำหรับ ${borrower}`); alert('ส่งคำขอเบิกเรียบร้อยแล้ว'); closeModal(); });
         document.getElementById('repair-form').addEventListener('submit', async (e) => { e.preventDefault(); const select = document.getElementById('repair-tool-select'); const toolId = select.value; const selOpt = select.options[select.selectedIndex]; const toolName = selOpt.dataset.name; const reporter = document.getElementById('reporter-name').value; const problem = document.getElementById('problem-description').value; await supabase.from('tools').update({ status: 'ซ่อมบำรุง' }).eq('id', toolId); await logActivity('แจ้งซ่อมเครื่องมือ', `${toolName} (อาการ: ${problem})`); const url = `print-repair.html?toolName=${encodeURIComponent(toolName)}&toolCode=${encodeURIComponent(selOpt.dataset.code)}&reporter=${encodeURIComponent(reporter)}&problem=${encodeURIComponent(problem)}`; window.open(url, '_blank'); closeModal(); refreshAllData(); });
 
         document.getElementById('manage-users-btn').addEventListener('click', async () => { await loadUsersTable(); openModal(manageUsersModal); });
